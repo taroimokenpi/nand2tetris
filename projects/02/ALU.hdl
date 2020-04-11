@@ -42,5 +42,31 @@ CHIP ALU {
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+    Mux16(a=x, b=false, sel=zx, out=zxout); // if (zx == 1) set x = 0
+    Mux16(a=y, b=false, sel=zy, out=zyout); // if (zy == 1) set y = 0
+
+    // if (nx == 1) set x = !x 
+    Not16(in=zxout, out=notw1);
+    Mux16(a=zxout, b=notw1, sel=nx, out=nxout);
+
+    // if (ny == 1) set y = !y 
+    Not16(in=zyout, out=notw2);
+    Mux16(a=zyout, b=notw2, sel=ny, out=nyout);
+
+    // if (f == 1)  set out = x + y
+    // if (f == 0)  set out = x & y
+    And16(a=nxout, b=nyout, out=xandy);
+    Add16(a=nxout, b=nyout, out=xaddy);
+    Mux16(a=xandy, b=xaddy, sel=f, out=fout);
+
+    // if (no == 1) set out = !out
+    // if (out < 0) set ng = 1
+    Not16(in=fout, out=notw3);
+    Mux16(a=fout, b=notw3, sel=no, out=out, out[0..7]=out0to7, out[8..15]=out8to15, out[15]=ng);
+
+    // if (out == 0) set zr = 1
+    Or8Way(in=out0to7, out=orw1);     // 8ビット入力のうち少なくとも一つが1であれば1を出力
+    Or8Way(in=out8to15, out=orw2);   // 8ビット入力のうち少なくとも一つが1であれば1を出力
+    Or(a=orw1, b=orw2, out=barzr);     // out=0000 0000 0000 0000であればbarzerには0が入る
+    Not(in=barzr, out=zr);
 }
